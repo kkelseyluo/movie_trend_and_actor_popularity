@@ -17,7 +17,7 @@ def do_genre_list():
         genre_list[i['id']]=i['name']
     return genre_list
 
-# return a list of number of movies by genre
+# return the number of movies by genre in 2017
 def get_release_amount(genre_list):
     print("\nIn the year of 2017:")
     print('{:10s}{:20s}{}'.format('ID','Genre','Number of Release'))
@@ -28,20 +28,12 @@ def get_release_amount(genre_list):
 
 # Get moive list by genre by calling API
 def do_movie_list(genre,genre_list):
-    start_time=time.time()
-    iteration=1
     response=requests.get('https://api.themoviedb.org/3/discover/movie?api_key='+TMDB_KEY+'&language=en-US&sort_by=release_date.asc&include_adult=false&include_video=false&primary_release_year=2017&with_genres='+str(genre))
     TotalPage=int(response.text.split(":")[3].split(',')[0])
-
     movie_list=response.json()['results']
     for page in range(2,TotalPage+1):
         resp=requests.get('https://api.themoviedb.org/3/discover/movie?api_key='+TMDB_KEY+'&language=en-US&sort_by=release_date.asc&include_adult=false&include_video=false&primary_release_year=2017&with_genres='+str(genre)+'&page='+str(page))
         movie_list+=resp.json()['results']
-        iteration+=1
-        # To see if program needs pause
-        if iteration/(time.time()-start_time)>4:
-            time.sleep(5)
-    print('{:8s}{:16s}{:15s}{:16s}{:15s}'.format(str(genre),genre_list[int(genre)],str(len(movie_list)),str(iteration),str(round(time.time()-start_time,2))+' sec'))
     return movie_list
     
 # Count number of release each month by ONE genre in the movie_list
@@ -59,24 +51,22 @@ def count_by_month(movie_list):
 # Call functions above one time for each genre to be plotted to get the plot data
 def get_graph_data(genre_to_plot,genre_list):
     total_list=[]
-    print('{:8s}{:16s}{:15s}{:16s}{:15s}'.format('ID','Genre','Release Number','API Calling','Time Used'))
     for g in genre_to_plot:
         total_list.append(count_by_month(do_movie_list(g,genre_list)))
     ylist=[]
     for i in range(len(genre_to_plot)):
         ylist.append([genre_list[int(genre_to_plot[i])],[j[1] for j in total_list[i]]])
+        print('.')
     print("\nData collection completed, ready to do the visualization")
     return ylist
 
 # visualization by using bokeh package
 def visual_bok(ys):
-    color=bokeh.palettes.mpl['Plasma'][9]
-    # line_dash=['solid']
+    color=bokeh.palettes.mpl['Plasma'][5]
     bplt.output_file("genre_by_season.html")
     graph = bplt.figure(plot_width=800, plot_height=600,x_axis_label='Month',y_axis_label='Releases',title='Release by Genre: 2017')
     graph.title.text_font_size = '16pt'
     color_num=0
-    # dash_num=0
     for y in ys:
         graph.line(x=list(range(1,13)), y=y[1],line_width=4,legend=y[0],color=color[color_num])
         color_num+=1
