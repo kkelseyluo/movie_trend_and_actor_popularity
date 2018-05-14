@@ -5,6 +5,8 @@ import time
 import bokeh.plotting as bplt
 import bokeh
 import calendar
+import pandas as pd
+from collections import OrderedDict
 
 ## Part I: Genres by Season
 
@@ -114,8 +116,52 @@ def assignment_1():
     print('*'*52+'\n')
     visual_bok(get_graph_data(genres,genre_list))
 
+def actor_chosen(actor_name):
+    actor=actor_name.replace(" ", "+")
+    actor_api=requests.get('http://api.tmdb.org/3/search/person?api_key='+TMDB_KEY+'&query='+str(actor))
+    actor_api=actor_api.json()['results']
+    actor_id=[d['id'] for d in actor_api]
+    actor_id=actor_id[0]
+    movie_api=requests.get('https://api.themoviedb.org/3/person/'+str(actor_id)+'/movie_credits?api_key='+TMDB_KEY+'&language=en-US')
+    movie_api=movie_api.json()['cast']
+    #print(movie_api)
+    return movie_api
+
+def movie_pop(movie_api):
+	movie_profit=[]
+	release_date=[]
+	print("It might take up to 1 minute to get all the data")
+	print("Please wait for \"Data collection completed\" message")
+	print("Each dot represents one movie processed")
+	for movie in movie_api:
+		movie_data = requests.get('https://api.themoviedb.org/3/movie/'+ str(movie['id']) +'?api_key='+TMDB_KEY+'&language=en-US')
+		movie_data = movie_data.json()
+		if movie_data['revenue'] > 2000:
+			movie_gross = movie_data['revenue']-movie_data['budget']
+			movie_profit.append(movie_gross)
+			release_date.append(movie_data['release_date'])
+			print('.',sep=' ', end='', flush=True)
+	print("\nData collection completed, ready to do the visualization")
+	graph_data = dict(zip(release_date,movie_profit))
+	graph_dict = OrderedDict(sorted(graph_data.items()))
+	return graph_dict
+
+def plot_pop(plot_dict,actor_name):
+	x_sorted = list(plot_dict.keys())
+	y = list(plot_dict.values())
+	x = [datetime.datetime.strptime(i, "%Y-%m-%d") for i in x_sorted]
+	df = pd.DataFrame({'date': x, 'popularity': y})
+	bplt.output_file("actor_popularity.html")
+	pop = bplt.figure(plot_width=800, plot_height=600,x_axis_type='datetime', x_axis_label='Year',y_axis_label='Profit',title=str(actor_name)+' Popularity over Time')
+	pop.title.text_font_size = '16pt'
+	pop.line(df['date'], df['popularity'], line_color='#2b8cbe')
+	bplt.show(pop)
+
 def assignment_2():
-    print("Huiru will finish this part.")
+	actor_name=input("Please indicate which actor you want to analyze: ")
+	movie_api=actor_chosen(actor_name)
+	plot_dict=movie_pop(movie_api)
+	plot_pop(plot_dict,actor_name)
 
 def main():
     print('Hello! Please indicate which part of the assignment you want to see?')
