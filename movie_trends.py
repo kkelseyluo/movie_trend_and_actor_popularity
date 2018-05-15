@@ -5,6 +5,8 @@ import time
 import bokeh.plotting as bplt
 import bokeh
 import calendar
+import pandas as pd
+from collections import OrderedDict
 
 ## Part I: Genres by Season
 
@@ -24,8 +26,8 @@ def get_release_amount(genre_list):
     for i in genre_list:
         genre=str(i)
         response=requests.get('https://api.themoviedb.org/3/discover/movie?api_key='+TMDB_KEY+'&language=en-US&sort_by=release_date.asc&include_adult=false&include_video=false&primary_release_year=2017&with_genres='+genre)
-        print('{:10s}{:20s}{}'.format(str(i),genre_list[i],response.text.split(":")[2].split(',')[0]))
-
+        print('{:10s}{:20s}{}'.format(str(i),genre_list[i],response.text.split(":")[2].split(',')[0]), flush=True)
+     
 # Get moive list by genre by calling API
 def do_movie_list(genre,genre_list):
     response=requests.get('https://api.themoviedb.org/3/discover/movie?api_key='+TMDB_KEY+'&language=en-US&sort_by=release_date.asc&include_adult=false&include_video=false&primary_release_year=2017&with_genres='+str(genre))
@@ -34,6 +36,7 @@ def do_movie_list(genre,genre_list):
     for page in range(2,TotalPage+1):
         resp=requests.get('https://api.themoviedb.org/3/discover/movie?api_key='+TMDB_KEY+'&language=en-US&sort_by=release_date.asc&include_adult=false&include_video=false&primary_release_year=2017&with_genres='+str(genre)+'&page='+str(page))
         movie_list+=resp.json()['results']
+        print('.',sep=' ', end='', flush=True)
     return movie_list
     
 # Count number of release each month by ONE genre in the movie_list
@@ -56,7 +59,6 @@ def get_graph_data(genre_to_plot,genre_list):
     ylist=[]
     for i in range(len(genre_to_plot)):
         ylist.append([genre_list[int(genre_to_plot[i])],[j[1] for j in total_list[i]]])
-        print('.')
     print("\nData collection completed, ready to do the visualization")
     return ylist
 
@@ -66,6 +68,7 @@ def visual_bok(ys):
     bplt.output_file("genre_by_season.html")
     graph = bplt.figure(plot_width=800, plot_height=600,x_axis_label='Month',y_axis_label='Releases',title='Release by Genre: 2017')
     graph.title.text_font_size = '16pt'
+    # The colors of graph
     color_num=0
     for y in ys:
         graph.line(x=list(range(1,13)), y=y[1],line_width=4,legend=y[0],color=color[color_num])
@@ -73,24 +76,65 @@ def visual_bok(ys):
         if color_num>=len(color):
             color_num=0
     graph.legend.orientation = "horizontal"
-    # Set x ticks names
+    # X axis
     month_name=[calendar.month_name[i][0:3] for i in range(1,13)]
     month_x={}
     for i in range(12):
         month_x[i+1]=month_name[i]
     graph.xaxis.major_label_overrides = month_x
     graph.xaxis[0].ticker.desired_num_ticks = 12
-    
+    # Y axis
     graph.y_range.start = 0
-    yss=[]
-    # Set yrange_end larger so that legends won't be overlapped by the plot
+    yaxis=[]
     for i in ys:
-        yss+=i[1]
-    graph.y_range.end=max(yss)*1.2
+        yaxis+=i[1]
+    graph.y_range.end=max(yaxis)*1.2
     bplt.show(graph)
 
 ## Part II: Actor Popularity
-### Huiru, please start code here, thank you.
+# looking up a particular actor and getting a list of movies they starred in.
+def actor_chosen(actor_name):
+    actor=actor_name.replace(" ", "+")
+    actor_api=requests.get('http://api.tmdb.org/3/search/person?api_key='+TMDB_KEY+'&query='+str(actor))
+    actor_api=actor_api.json()['results']
+    actor_id=[d['id'] for d in actor_api]
+    actor_id=actor_id[0]
+    movie_api=requests.get('https://api.themoviedb.org/3/person/'+str(actor_id)+'/movie_credits?api_key='+TMDB_KEY+'&language=en-US')
+    movie_api=movie_api.json()['cast']
+    #print(movie_api)
+    return movie_api
+
+# take this list of movies and determine the popularity of each one.
+def movie_pop(movie_api):
+	movie_profit=[]
+	release_date=[]
+	print("It might take up to 1 minute to get all the data")
+	print("Please wait for \"Data collection completed\" message")
+	print("Each dot represents one movie processed")
+	for movie in movie_api:
+		movie_data = requests.get('https://api.themoviedb.org/3/movie/'+ str(movie['id']) +'?api_key='+TMDB_KEY+'&language=en-US')
+		movie_data = movie_data.json()
+		if movie_data['revenue'] > 2000:
+			movie_gross = movie_data['revenue']-movie_data['budget']
+			movie_profit.append(movie_gross)
+			release_date.append(movie_data['release_date'])
+			print('.',sep=' ', end='', flush=True)
+	print("\nData collection completed, ready to do the visualization")
+	graph_data = dict(zip(release_date,movie_profit))
+	graph_dict = OrderedDict(sorted(graph_data.items()))
+	return graph_dict
+
+# visualization from these results
+def plot_pop(plot_dict,actor_name):
+	x_sorted = list(plot_dict.keys())
+	y = list(plot_dict.values())
+	x = [datetime.datetime.strptime(i, "%Y-%m-%d") for i in x_sorted]
+	df = pd.DataFrame({'date': x, 'popularity': y})
+	bplt.output_file("actor_popularity.html")
+	pop = bplt.figure(plot_width=800, plot_height=600,x_axis_type='datetime', x_axis_label='Year',y_axis_label='Profit',title=str(actor_name)+' Popularity over Time')
+	pop.title.text_font_size = '16pt'
+	pop.line(df['date'], df['popularity'], line_color='#2b8cbe', line_width=4)
+	bplt.show(pop)
 
 ## main functions
 def assignment_1():
@@ -115,7 +159,10 @@ def assignment_1():
     visual_bok(get_graph_data(genres,genre_list))
 
 def assignment_2():
-    print("Huiru will finish this part.")
+	actor_name=input("Please indicate which actor you want to analyze (e.g. Nicolas Cage, Tom Hanks, or else): ")
+	movie_api=actor_chosen(actor_name)
+	plot_dict=movie_pop(movie_api)
+	plot_pop(plot_dict,actor_name)
 
 def main():
     print('Hello! Please indicate which part of the assignment you want to see?')
