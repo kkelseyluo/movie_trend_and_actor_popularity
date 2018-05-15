@@ -93,7 +93,6 @@ def visual_bok(ys):
 
 ## Part II: Actor Popularity
 # looking up a particular actor and getting a list of movies they starred in.
-### Huiru, please start code here, thank you.
 def actor_chosen(actor_name):
     actor=actor_name.replace(" ", "+")
     actor_api=requests.get('http://api.tmdb.org/3/search/person?api_key='+TMDB_KEY+'&query='+str(actor))
@@ -102,7 +101,6 @@ def actor_chosen(actor_name):
     actor_id=actor_id[0]
     movie_api=requests.get('https://api.themoviedb.org/3/person/'+str(actor_id)+'/movie_credits?api_key='+TMDB_KEY+'&language=en-US')
     movie_api=movie_api.json()['cast']
-    #print(movie_api)
     return movie_api
 
 # take this list of movies and determine the popularity of each one.
@@ -135,13 +133,11 @@ def plot_pop(plot_dict,actor_name):
 	pop = bplt.figure(plot_width=800, plot_height=600,x_axis_type='datetime', x_axis_label='Year',y_axis_label='Profit',title=str(actor_name)+' Popularity over Time')
 	pop.title.text_font_size = '16pt'
 	pop.line(df['date'], df['popularity'], line_color='#2b8cbe', line_width=4)
-	pop.line(df['date'], df['popularity'], line_color='#2b8cbe')
 	bplt.show(pop)
 
 ## main functions
 def assignment_1():
     default_list='37,10752,36,10770,14'
-    # release_year=input('Please choose the year you want to explore the result here: ')
     genre_list=do_genre_list()
     get_release_amount(genre_list)
     print('\nPlease refer to the genre list above and choose the IDs to be plotted.')
@@ -162,7 +158,6 @@ def assignment_1():
 
 def assignment_2():
 	actor_name=input("Please indicate which actor you want to analyze (e.g. Nicolas Cage, Tom Hanks, or else): ")
-	actor_name=input("Please indicate which actor you want to analyze (e.g. Nicolas Cage, Tom Hanks, or else: ")
 	movie_api=actor_chosen(actor_name)
 	plot_dict=movie_pop(movie_api)
 	plot_pop(plot_dict,actor_name)
