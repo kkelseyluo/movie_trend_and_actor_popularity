@@ -93,29 +93,6 @@ def visual_bok(ys):
 
 ## Part II: Actor Popularity
 ### Huiru, please start code here, thank you.
-
-## main functions
-def assignment_1():
-    default_list='37,10752,36,10770,14'
-    # release_year=input('Please choose the year you want to explore the result here: ')
-    genre_list=do_genre_list()
-    get_release_amount(genre_list)
-    print('\nPlease refer to the genre list above and choose the IDs to be plotted.')
-    print('You can use default list :',default_list,'by hitting ENTER directly.')
-    print('\n'+'*'*22,'NOTE', '*'*22)
-    print('You might need to wait for longer time if you use')
-    print('the IDs that have large number of releases.') 
-    print('*'*22, "NOTE", '*'*22, '\n')
-    genres=input('Please input genre IDs (divided by comma):')
-    if genres=='':   
-        genres=default_list
-    genres=genres.split(',')
-    print('\n'+'*'*52)
-    print("It might take up to 1 minute to get all the data")
-    print("Please wait for \"Data collection completed\" message")
-    print('*'*52+'\n')
-    visual_bok(get_graph_data(genres,genre_list))
-
 def actor_chosen(actor_name):
     actor=actor_name.replace(" ", "+")
     actor_api=requests.get('http://api.tmdb.org/3/search/person?api_key='+TMDB_KEY+'&query='+str(actor))
@@ -157,8 +134,30 @@ def plot_pop(plot_dict,actor_name):
 	pop.line(df['date'], df['popularity'], line_color='#2b8cbe')
 	bplt.show(pop)
 
+## main functions
+def assignment_1():
+    default_list='37,10752,36,10770,14'
+    # release_year=input('Please choose the year you want to explore the result here: ')
+    genre_list=do_genre_list()
+    get_release_amount(genre_list)
+    print('\nPlease refer to the genre list above and choose the IDs to be plotted.')
+    print('You can use default list :',default_list,'by hitting ENTER directly.')
+    print('\n'+'*'*22,'NOTE', '*'*22)
+    print('You might need to wait for longer time if you use')
+    print('the IDs that have large number of releases.') 
+    print('*'*22, "NOTE", '*'*22, '\n')
+    genres=input('Please input genre IDs (divided by comma):')
+    if genres=='':   
+        genres=default_list
+    genres=genres.split(',')
+    print('\n'+'*'*52)
+    print("It might take up to 1 minute to get all the data")
+    print("Please wait for \"Data collection completed\" message")
+    print('*'*52+'\n')
+    visual_bok(get_graph_data(genres,genre_list))
+
 def assignment_2():
-	actor_name=input("Please indicate which actor you want to analyze: ")
+	actor_name=input("Please indicate which actor you want to analyze (e.g. Nicolas Cage, Tom Hanks, or else: ")
 	movie_api=actor_chosen(actor_name)
 	plot_dict=movie_pop(movie_api)
 	plot_pop(plot_dict,actor_name)
